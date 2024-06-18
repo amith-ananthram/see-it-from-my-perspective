@@ -1,0 +1,6 @@
+id,country.name,country.id,region.id,type,imageRelPath,topics,place,income,imagenet_synonyms,imagenet_sysnet_id
+5d4bf2b4cf0b3a0f3f358be6,China,cn,as,image,assets/5d4bf2b4cf0b3a0f3f358be6/5d4bf2b4cf0b3a0f3f358be6.jpg,['cooking utensils'],wang,240,['spatula'],[813]
+5d4be643cf0b3a0f3f3435a9,China,cn,as,image,assets/5d4be643cf0b3a0f3f3435a9/5d4be643cf0b3a0f3f3435a9.JPG,"['lock on front door', 'front door']",liu,4734,['padlock'],[695]
+5d4be4e8cf0b3a0f3f340f3c,United States,us,am,image,assets/5d4be4e8cf0b3a0f3f340f3c/5d4be4e8cf0b3a0f3f340f3c.jpg,['street detail'],williams,2055,['street sign'],[919]
+5d4be6a5cf0b3a0f3f3440d4,China,cn,as,image,assets/5d4be6a5cf0b3a0f3f3440d4/5d4be6a5cf0b3a0f3f3440d4.JPG,['social drink'],zhang-01,575.2545865,['soda bottle'],[737]
+5d4bdec1cf0b3a0f3f33684d,United States,us,am,image,assets/5d4bdec1cf0b3a0f3f33684d/5d4bdec1cf0b3a0f3f33684d.jpg,['dish racks'],duncan,800,['plate rack'],[729]

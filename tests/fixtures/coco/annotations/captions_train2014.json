@@ -1,0 +1,76 @@
+{
+  "images": [
+    {
+      "license": 3,
+      "file_name": "COCO_train2014_000000424572.jpg",
+      "coco_url": "http://images.cocodataset.org/train2014/COCO_train2014_000000424572.jpg",
+      "height": 428,
+      "width": 640,
+      "date_captured": "2013-11-19 21:04:08",
+      "flickr_url": "http://farm3.staticflickr.com/2178/2029772054_2c6f90e4df_z.jpg",
+      "id": 424572
+    },
+    {
+      "license": 1,
+      "file_name": "COCO_train2014_000000537684.jpg",
+      "coco_url": "http://images.cocodataset.org/train2014/COCO_train2014_000000537684.jpg",
+      "height": 429,
+      "width": 640,
+      "date_captured": "2013-11-17 02:28:15",
+      "flickr_url": "http://farm3.staticflickr.com/2555/4156607027_df352a8397_z.jpg",
+      "id": 537684
+    }
+  ],
+  "annotations": [
+    {
+      "image_id": 537684,
+      "id": 489159,
+      "caption": "There are two street signs in a foreign language."
+    },
+    {
+      "image_id": 424572,
+      "id": 805827,
+      "caption": "a piece of cake sitting on a plate with a fork and nothing else"
+    },
+    {
+      "image_id": 537684,
+      "id": 486789,
+      "caption": "A two way street sign on a street side."
+    },
+    {
+      "image_id": 424572,
+      "id": 803571,
+      "caption": "A piece of white chocolate and strawberry cake."
+    },
+    {
+      "image_id": 537684,
+      "id": 489654,
+      "caption": "Blue signs stand near a gray and blue building."
+    },
+    {
+      "image_id": 424572,
+      "id": 803652,
+      "caption": "A piece of cake sitting on a plate with a strawberry."
+    },
+    {
+      "image_id": 424572,
+      "id": 808377,
+      "caption": "A slice of cake that is on a plate near a fork."
+    },
+    {
+      "image_id": 537684,
+      "id": 488967,
+      "caption": "A bunch of blue street signs on a city corner"
+    },
+    {
+      "image_id": 537684,
+      "id": 823201,
+      "caption": "Several blue street signs are hanging from a pole."
+    },
+    {
+      "image_id": 424572,
+      "id": 803667,
+      "caption": "A slice of white cake with kiwi and a strawberry on top"
+    }
+  ]
+}

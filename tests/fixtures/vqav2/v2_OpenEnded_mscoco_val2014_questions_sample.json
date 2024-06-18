@@ -1,0 +1,39 @@
+{
+  "info": {
+    "description": "This is v2.0 of the VQA dataset.",
+    "url": "http://visualqa.org",
+    "version": "2.0",
+    "year": 2017,
+    "contributor": "VQA Team",
+    "date_created": "2017-04-26 17:00:44"
+  },
+  "task_type": "Open-Ended",
+  "data_type": "mscoco",
+  "license": {
+    "url": "http://creativecommons.org/licenses/by/4.0/",
+    "name": "Creative Commons Attribution 4.0 International License"
+  },
+  "data_subtype": "val2014",
+  "questions": [
+    {
+      "image_id": 341397,
+      "question": "Is that a walk-in shower?",
+      "question_id": 341397000
+    },
+    {
+      "image_id": 341397,
+      "question": "Is this room finished?",
+      "question_id": 341397001
+    },
+    {
+      "image_id": 341397,
+      "question": "What color is the shower curtain?",
+      "question_id": 341397002
+    },
+    {
+      "image_id": 341397,
+      "question": "What shape are all the tiles?",
+      "question_id": 341397003
+    }
+  ]
+}

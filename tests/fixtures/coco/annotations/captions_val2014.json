@@ -1,0 +1,76 @@
+{
+  "images": [
+    {
+      "license": 5,
+      "file_name": "COCO_val2014_000000497158.jpg",
+      "coco_url": "http://images.cocodataset.org/val2014/COCO_val2014_000000497158.jpg",
+      "height": 375,
+      "width": 500,
+      "date_captured": "2013-11-17 05:25:26",
+      "flickr_url": "http://farm4.staticflickr.com/3575/3513274237_052ac5eae5_z.jpg",
+      "id": 497158
+    },
+    {
+      "license": 4,
+      "file_name": "COCO_val2014_000000341397.jpg",
+      "coco_url": "http://images.cocodataset.org/val2014/COCO_val2014_000000341397.jpg",
+      "height": 640,
+      "width": 613,
+      "date_captured": "2013-11-15 00:38:23",
+      "flickr_url": "http://farm4.staticflickr.com/3619/3519015099_514713b0ee_z.jpg",
+      "id": 341397
+    }
+  ],
+  "annotations": [
+    {
+      "image_id": 497158,
+      "id": 423220,
+      "caption": "Street with light traffic at intersection in large city."
+    },
+    {
+      "image_id": 341397,
+      "id": 767886,
+      "caption": "A bathroom toilet that has a curtain in it."
+    },
+    {
+      "image_id": 497158,
+      "id": 431578,
+      "caption": "A truck is crossing a busy and rainy intersection"
+    },
+    {
+      "image_id": 341397,
+      "id": 763215,
+      "caption": "We are looking at a large old bath room."
+    },
+    {
+      "image_id": 341397,
+      "id": 764754,
+      "caption": "A large tile bathroom with toilet and bath tub."
+    },
+    {
+      "image_id": 341397,
+      "id": 763842,
+      "caption": "A bathroom with tub and toilet, tiled in white tiling."
+    },
+    {
+      "image_id": 497158,
+      "id": 430981,
+      "caption": "A trucking driving through an intersection of a wet street."
+    },
+    {
+      "image_id": 341397,
+      "id": 768087,
+      "caption": "This bathroom has tiled walls, floor, and a tiled bathtub. "
+    },
+    {
+      "image_id": 497158,
+      "id": 435604,
+      "caption": "A traffic light over a street with a truck."
+    },
+    {
+      "image_id": 497158,
+      "id": 435949,
+      "caption": "A traffic light over a street with a truck."
+    }
+  ]
+}
