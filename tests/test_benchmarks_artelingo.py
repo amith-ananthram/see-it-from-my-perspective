@@ -1,6 +1,6 @@
 import unittest
 
-from datasets.artelingo import ArtELingo
+from benchmarks.artelingo import ArtELingo
 
 
 class TestDatasetsArtELingo(unittest.TestCase):

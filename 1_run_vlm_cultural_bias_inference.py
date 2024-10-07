@@ -1,4 +1,3 @@
-import re
 import os
 import sys
 import json
@@ -16,20 +15,6 @@ from transformers import AutoTokenizer, AutoProcessor, \
 
 sys.path.append('.')
 
-sys.path.append('other_repos/llava')
-from llava import LlavaLlamaForCausalLM as LegacyLlavaForConditionalGeneration
-from llava.conversation import conv_templates as legacy_llava_conv_templates
-from llava.mm_utils import process_images as legacy_llava_process_images, \
-    tokenizer_image_token as legacy_llava_tokenizer_image_token
-from llava.constants import (
-    DEFAULT_IMAGE_PATCH_TOKEN as LEGACY_LLAVA_DEFAULT_IMAGE_PATCH_TOKEN,
-    DEFAULT_IMAGE_TOKEN as LEGACY_LLAVA_DEFAULT_IMAGE_TOKEN,
-    DEFAULT_IM_START_TOKEN as LEGACY_LLAVA_DEFAULT_IM_START_TOKEN,
-    DEFAULT_IM_END_TOKEN as LEGACY_LLAVA_DEFAULT_IM_END_TOKEN,
-    IMAGE_PLACEHOLDER as LEGACY_LLAVA_IMAGE_PLACEHOLDER,
-    IMAGE_TOKEN_INDEX as LEGACY_LLAVA_IMAGE_TOKEN_INDEX
-)
-
 sys.path.append('other_repos/mllava')
 from mllava.mm_utils import process_images as mllava_process_images
 from mllava.conversation import conv_templates as mllava_conv_templates
@@ -39,80 +24,13 @@ from mllava.model.builder import load_pretrained_model as mllava_load_pretrained
 from mllava.constants import IMAGE_TOKEN_INDEX as MLLAVA_IMAGE_TOKEN_INDEX
 
 from constants import LANG_COMMAS, LANG_COLONS, LANG_DELIMITERS
-from datasets.dollarstreet import DollarStreet
-from datasets.aokvqa import AOKVQA
-from datasets.cvqa import CVQA
-from datasets.artelingo import ArtELingo
+from benchmarks.dollarstreet import DollarStreet
+from benchmarks.aokvqa import AOKVQA
+from benchmarks.cvqa import CVQA
+from benchmarks.artelingo import ArtELingo
 from utils import clean_generation
 
 TARGET_LANGS = ['en', 'zh']
-
-
-class LegacyLlavaDataset(Dataset):
-
-    def __init__(
-            self, delegate, instructions, include_sys, translate_template,
-            response_start, image_placement, model, config, tokenizer, image_processor
-    ):
-        assert not include_sys, "not implemented!"
-        assert not translate_template, "not implemented!"
-
-        self.delegate = delegate
-        self.instructions = instructions
-        self.include_sys = include_sys
-        self.translate_template = translate_template
-        self.response_start = response_start
-        self.image_placement = image_placement
-        self.model = model
-        self.config = config
-        self.tokenizer = tokenizer
-        self.image_processor = image_processor
-
-    def __len__(self):
-        return len(self.delegate)
-
-    def __getitem__(self, idx):
-        idx, image_file, lang, img, prefix_and_label, metadatum = self.delegate[idx]
-
-        if self.image_placement == 'before':
-            template = f"{LEGACY_LLAVA_IMAGE_PLACEHOLDER}\n%s"
-        else:
-            assert self.image_placement == 'after'
-            template = f"%s\n{LEGACY_LLAVA_IMAGE_PLACEHOLDER}"
-
-        prefix_text, prompt, label = build_prompt(
-            lang, prefix_and_label, self.instructions[lang], template
-        )
-
-        image_token_se = LEGACY_LLAVA_DEFAULT_IM_START_TOKEN + \
-                         LEGACY_LLAVA_DEFAULT_IMAGE_TOKEN + LEGACY_LLAVA_DEFAULT_IM_END_TOKEN
-        if self.config.mm_use_im_start_end:
-            prompt = re.sub(LEGACY_LLAVA_IMAGE_PLACEHOLDER, image_token_se, prompt)
-        else:
-            prompt = re.sub(LEGACY_LLAVA_IMAGE_PLACEHOLDER, LEGACY_LLAVA_DEFAULT_IMAGE_TOKEN, prompt)
-
-        conv = legacy_llava_conv_templates[self.model].copy()
-        conv.append_message(conv.roles[0], prompt)
-        conv.append_message(conv.roles[1], self.response_start[lang])
-        prompt = conv.get_prompt()
-
-        input_ids = legacy_llava_tokenizer_image_token(
-            prompt, self.tokenizer, LEGACY_LLAVA_IMAGE_TOKEN_INDEX, return_tensors="pt"
-        )
-        processed = {
-            'input_ids': input_ids,
-            'attention_mask': torch.ones(len(input_ids))
-        }
-
-        img = img.convert('RGB')
-        images = legacy_llava_process_images(
-            [img],
-            self.image_processor,
-            self.config
-        ).to(dtype=torch.float16).squeeze()
-        image_sizes = img.size
-
-        return idx, image_file, lang, metadatum, (prefix_text, prompt, processed, images, image_sizes), label
 
 
 LLAVA_SYSTEM_MESSAGES = {
@@ -421,45 +339,7 @@ def main(args):
     variant.append(args.mlm_variant.split('/')[-1])
 
     if args.mlm_variant in {
-        'llava_v0', 'llava_v1'
-    }:
-        model_path = os.path.join(
-            args.resources_dir, 'llava', args.mlm_variant
-        )
-        model = LegacyLlavaForConditionalGeneration.from_pretrained(
-            model_path, torch_dtype=torch.float16
-        ).eval().to(device)
-        processor = None
-        tokenizer = AutoTokenizer.from_pretrained(model_path)
-
-        device_map = {"": device}
-        mm_use_im_start_end = getattr(model.config, "mm_use_im_start_end", False)
-        mm_use_im_patch_token = getattr(model.config, "mm_use_im_patch_token", True)
-        if mm_use_im_patch_token:
-            tokenizer.add_tokens([LEGACY_LLAVA_DEFAULT_IMAGE_PATCH_TOKEN], special_tokens=True)
-        if mm_use_im_start_end:
-            tokenizer.add_tokens([
-                LEGACY_LLAVA_DEFAULT_IM_START_TOKEN, LEGACY_LLAVA_DEFAULT_IM_END_TOKEN
-            ], special_tokens=True)
-        model.resize_token_embeddings(len(tokenizer))
-
-        vision_tower = model.get_vision_tower()
-        if not vision_tower.is_loaded:
-            vision_tower.load_model(device_map=device_map)
-        if device_map != 'auto':
-            vision_tower.to(dtype=torch.float16).to(device)
-        image_processor = vision_tower.image_processor
-
-        mlm_dataset_class = LegacyLlavaDataset
-        mlm_dataset_args = {
-            'model': args.mlm_variant,
-            'config': model.config,
-            'tokenizer': tokenizer,
-            'image_processor': image_processor
-        }
-    elif args.mlm_variant in {
         'llava-hf/llava-1.5-7b-hf',
-        'llava-hf/llava-1.5-13b-hf',
         'llava-hf/bakLlava-v1-hf'
     }:
         model = LlavaForConditionalGeneration.from_pretrained(
@@ -474,9 +354,7 @@ def main(args):
         mlm_dataset_class = LlavaDataset
         mlm_dataset_args = {'processor': processor}
     elif args.mlm_variant in {
-        'Salesforce/blip2-opt-6.7b',
         'Salesforce/blip2-flan-t5-xxl',
-        'Gregor/mblip-mt0-xl',
         'Gregor/mblip-bloomz-7b'
     }:
         assert args.image_placement == 'before'
@@ -743,7 +621,7 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description="Produce East / West generations for the specified VLM & task."
+        description="Produce generations for the specified VLM & cultural bias task."
     )
     parser.add_argument(
         '--task', choices=[
@@ -772,14 +650,11 @@ if __name__ == '__main__':
     parser.add_argument('--skip-labels', type=str, default="")
     parser.add_argument('--required-agreement', type=int, default=None)
     parser.add_argument('--mlm-variant', type=str, default=None, choices=[
-        'llava_v0', 'llava_v1',
         'llava-hf/llava-1.5-7b-hf',
-        'llava-hf/llava-1.5-13b-hf',
         'llava-hf/bakLlava-v1-hf',
-        'Salesforce/blip2-opt-6.7b',
         'Salesforce/blip2-flan-t5-xxl',
-        'Qwen/Qwen-VL', 'Qwen/Qwen-VL-Chat',
-        'Gregor/mblip-mt0-xl',
+        'Qwen/Qwen-VL',
+        'Qwen/Qwen-VL-Chat',
         'Gregor/mblip-bloomz-7b',
         'mllava/baichuan2-en',
         'mllava/baichuan2-zh',
@@ -788,7 +663,7 @@ if __name__ == '__main__':
         'mllava/llama2-zh',
         'mllava/llama2-en_zh'
     ])
-    parser.add_argument('--image-placement', type=str, choices=['before', 'after'])
+    parser.add_argument('--image-placement', type=str, choices=['before', 'after'], default='before')
     parser.add_argument('--max-new-tokens', type=int, default=200)
     parser.add_argument('--do-sample', action='store_true')
     parser.add_argument('--temperature', type=float, default=0.0)

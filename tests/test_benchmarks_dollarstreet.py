@@ -1,6 +1,6 @@
 import unittest
 
-from datasets.dollarstreet import DollarStreet
+from benchmarks.dollarstreet import DollarStreet
 
 
 class TestDatasetsDollarStreet(unittest.TestCase):

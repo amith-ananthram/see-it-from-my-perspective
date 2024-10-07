@@ -27,3 +27,8 @@ LANG_DELIMITERS = {
     'en': ' ',
     'zh': ''
 }
+
+MULTI_CHOICE_INSTRUCTION = {
+    'en': 'Choose exactly one from %s.',
+    'zh': '从%s中准确选择一个。'
+}
