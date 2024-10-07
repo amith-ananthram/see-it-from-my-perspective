@@ -1,0 +1,24 @@
+{
+  "instruction": {
+    "en": "Identify the object(s) in this image.",
+    "zh": "识别该图像中的物体。"
+  },
+  "rubric": {
+    "en": {
+        "criteria": "Does the model's answer describe the same object (or kind of object) as the reference?",
+        "score1_description": "The model's answer describes an object that is completely unrelated to the reference answer.",
+        "score2_description": "The model's answer describes an object that is very different from the reference answer.",
+        "score3_description": "The model's answer describes an object similar to the reference answer.",
+        "score4_description": "The model's answer describes a specific instance of the reference answer.",
+        "score5_description": "The model's answer describes the same object as the reference answer."
+    },
+    "zh": {
+        "criteria": "模型的答案是否描述与参考相同的对象（或对象类型）？",
+        "score1_description": "模型的答案描述了与参考答案完全不相关的对象。",
+        "score2_description": "模型的答案描述了与参考答案有很大不同的对象。",
+        "score3_description": "模型的答案描述了与参考答案类似的对象。",
+        "score4_description": "模型的答案描述了参考答案的具体实例。",
+        "score5_description": "模型的答案描述与参考答案相同的对象。"
+    }
+  }
+}

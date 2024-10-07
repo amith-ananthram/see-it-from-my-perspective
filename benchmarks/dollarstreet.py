@@ -6,7 +6,7 @@ from ast import literal_eval
 
 from torch.utils.data import Dataset
 
-from constants import LANGS_TO_COUNTRIES, LANG_COMMAS
+from constants import LANG_COMMAS
 from utils import get_en_translations
 
 DOLLAR_STREET_DIR = 'dollar/dataset_dollarstreet'
@@ -40,16 +40,16 @@ TASK_TEXTS = {
 class DollarStreet(Dataset):
 
     def __init__(
-        self, ann_langs, target_langs, label_set, splits, preprocess, corpus_dir
+        self, ann_countries, target_langs, label_set, splits, preprocess, corpus_dir
     ):
         super().__init__()
 
-        assert len({LANGS_TO_COUNTRIES[ann_lang] for ann_lang in ann_langs} - VALID_COUNTRIES) == 0, ann_langs
+        assert len(set(ann_countries) - VALID_COUNTRIES) == 0, ann_countries
         assert len(set(target_langs) - {'en', 'zh'}) == 0, target_langs
         assert label_set in VALID_LABEL_SET, label_set
         assert all(split in VALID_SPLITS for split in splits), splits
 
-        self.ann_langs = ann_langs
+        self.ann_countries = ann_countries
         self.target_langs = target_langs
         self.splits = splits
         self.preprocess = preprocess
@@ -63,7 +63,7 @@ class DollarStreet(Dataset):
 
             for _, row in split_df.iterrows():
                 ann_country = row['country.id']
-                if ann_country not in {LANGS_TO_COUNTRIES[ann_lang] for ann_lang in ann_langs}:
+                if len(self.ann_countries) > 0 and ann_country not in self.ann_countries:
                     continue
 
                 image_file = os.path.join(

@@ -40,8 +40,10 @@ from mllava.constants import IMAGE_TOKEN_INDEX as MLLAVA_IMAGE_TOKEN_INDEX
 
 from constants import LANG_COMMAS, LANG_COLONS, LANG_DELIMITERS
 from datasets.dollarstreet import DollarStreet
-from datasets.vqa import VQA
+from datasets.aokvqa import AOKVQA
+from datasets.cvqa import CVQA
 from datasets.artelingo import ArtELingo
+from utils import clean_generation
 
 TARGET_LANGS = ['en', 'zh']
 
@@ -78,7 +80,7 @@ class LegacyLlavaDataset(Dataset):
             assert self.image_placement == 'after'
             template = f"%s\n{LEGACY_LLAVA_IMAGE_PLACEHOLDER}"
 
-        prompt, label = build_prompt(
+        prefix_text, prompt, label = build_prompt(
             lang, prefix_and_label, self.instructions[lang], template
         )
 
@@ -110,7 +112,7 @@ class LegacyLlavaDataset(Dataset):
         ).to(dtype=torch.float16).squeeze()
         image_sizes = img.size
 
-        return idx, image_file, lang, metadatum, (prompt, processed, images, image_sizes), label
+        return idx, image_file, lang, metadatum, (prefix_text, prompt, processed, images, image_sizes), label
 
 
 LLAVA_SYSTEM_MESSAGES = {
@@ -170,7 +172,7 @@ class LlavaDataset(Dataset):
         else:
             template = LANG_DELIMITERS["en"].join(template)
 
-        prompt, label = build_prompt(
+        prefix_text, prompt, label = build_prompt(
             lang, prefix_and_label, self.instructions[lang], template + self.response_start[lang]
         )
 
@@ -180,7 +182,7 @@ class LlavaDataset(Dataset):
         for key in processed:
             processed[key] = processed[key].squeeze()
 
-        return idx, image_file, lang, metadatum, (prompt, processed), label
+        return idx, image_file, lang, metadatum, (prefix_text, prompt, processed), label
 
 
 class MLlavaDataset(Dataset):
@@ -220,7 +222,7 @@ class MLlavaDataset(Dataset):
         conv.append_message(conv.roles[1], self.response_start[lang] or None)
         template = conv.get_prompt()
 
-        prompt, label = build_prompt(
+        prefix_text, prompt, label = build_prompt(
             lang, prefix_and_label, metadatum, template
         )
 
@@ -236,7 +238,7 @@ class MLlavaDataset(Dataset):
             [img.convert('RGB')], self.image_processor, self.config
         ).to(dtype=torch.float16).squeeze()
 
-        return idx, image_file, lang, metadatum, (prompt, processed, images, img.size), label
+        return idx, image_file, lang, metadatum, (prefix_text, prompt, processed, images, img.size), label
 
 
 class BlipDataset(Dataset):
@@ -265,7 +267,7 @@ class BlipDataset(Dataset):
         assert self.image_placement == 'before'
 
         template = "Question: %s"
-        prompt, label = build_prompt(
+        prefix_text, prompt, label = build_prompt(
             lang, prefix_and_label, self.instructions[lang],
             LANG_DELIMITERS[lang].join([template, self.response_start[lang]]).strip()
         )
@@ -276,7 +278,7 @@ class BlipDataset(Dataset):
         for key in processed:
             processed[key] = processed[key].squeeze()
 
-        return idx, image_file, lang, metadatum, (prompt, processed), label
+        return idx, image_file, lang, metadatum, (prefix_text, prompt, processed), label
 
 
 class QwenDataset(Dataset):
@@ -302,7 +304,7 @@ class QwenDataset(Dataset):
     def __getitem__(self, idx):
         idx, image_file, lang, img, prefix_and_label, metadatum = self.delegate[idx]
 
-        prompt, label = build_prompt(
+        prefix_text, prompt, label = build_prompt(
             lang, prefix_and_label, self.instructions[lang], "%s" + self.response_start[lang]
         )
 
@@ -324,7 +326,7 @@ class QwenDataset(Dataset):
         for key in processed:
             processed[key] = processed[key].squeeze()
 
-        return idx, image_file, lang, metadatum, (prompt, processed), label
+        return idx, image_file, lang, metadatum, (prefix_text, prompt, processed), label
 
 
 def prompt_collator(batch):
@@ -337,22 +339,19 @@ def prompt_collator(batch):
         inputs.append(input)
         labels.append(label)
 
-    if len(inputs[0]) == 2:
-        prompts = [prompts_and_inputs[0] for prompts_and_inputs in inputs]
-        input_ids = [prompts_and_inputs[1] for prompts_and_inputs in inputs]
-        inputs = (prompts, input_ids)
-    elif len(inputs[0]) == 3:
-        prompts = [input_ids_and_images[0] for input_ids_and_images in inputs]
-        input_ids = [input_ids_and_images[1] for input_ids_and_images in inputs]
-        images = [input_ids_and_images[2] for input_ids_and_images in inputs]
-        inputs = (prompts, input_ids, torch.stack(images))
+    prefix_texts = [prompts_and_inputs[0] for prompts_and_inputs in inputs]
+    prompts = [prompts_and_inputs[1] for prompts_and_inputs in inputs]
+    input_ids = [prompts_and_inputs[2] for prompts_and_inputs in inputs]
+    if len(inputs[0]) == 3:
+        inputs = (prefix_texts, prompts, input_ids)
+    elif len(inputs[0]) == 4:
+        images = [input_ids_and_images[3] for input_ids_and_images in inputs]
+        inputs = (prefix_texts, prompts, input_ids, torch.stack(images))
     else:
-        assert len(inputs[0]) == 4
-        prompts = [input_ids_and_images[0] for input_ids_and_images in inputs]
-        input_ids = [input_ids_and_images[1] for input_ids_and_images in inputs]
-        images = [input_ids_and_images[2] for input_ids_and_images in inputs]
-        image_sizes = [input_ids_and_images[3] for input_ids_and_images in inputs]
-        inputs = (prompts, input_ids, torch.stack(images), image_sizes)
+        assert len(inputs[0]) == 5
+        images = [input_ids_and_images[3] for input_ids_and_images in inputs]
+        image_sizes = [input_ids_and_images[4] for input_ids_and_images in inputs]
+        inputs = (prefix_texts, prompts, input_ids, torch.stack(images), image_sizes)
 
     return idxs, image_files, langs, metadata, inputs, labels
 
@@ -369,47 +368,20 @@ def collect_labels(target_lang, test_set, is_multi):
 
 
 def build_prompt(
-        lang, prefix_and_label, instruction, template
+    lang, prefix_and_label, instruction, template
 ):
-    prefix, label = prefix_and_label
+    prefix_text, label = prefix_and_label
 
-    prompt = [prefix.strip()]
+    prompt = [prefix_text.strip()]
 
     if instruction.strip() != '':
         prompt.append(instruction)
 
     return (
+        prefix_text,
         template % (LANG_DELIMITERS[lang].join(prompt).strip()),
         label
     )
-
-
-def clean_generation(generation, prefix, model_type):
-    if prefix is None or (
-            model_type in {'llava_v0', 'llava_v1'} or 'blip' in model_type.lower() or 'mllava' in model_type.lower()):
-        return generation.strip().lower()
-    else:
-        if "<img>" in prefix and "</img" in prefix:
-            prefix = prefix.replace("<img>", "")
-            prefix = prefix.replace("</img>", "")
-
-        if "[/INST]" in generation:
-            prefix = "[/INST]"
-
-        if "ASSISTANT:" in generation:
-            prefix = "ASSISTANT:"
-
-        if "助理：" in generation:
-            prefix = "助理："
-
-        if "<reserved_107>" in generation:
-            prefix = "<reserved_107>"
-
-        assert prefix in generation, (prefix, generation)
-
-        return generation[
-               generation.index(prefix) + len(prefix):
-               ].strip()
 
 
 def main(args):
@@ -597,28 +569,27 @@ def main(args):
                 sampling_args['top_k'] = args.top_k
                 sampling_args['top_p'] = args.top_p
 
-            if len(inputs) == 2:
-                prompts = inputs[0]
+            prefix_texts = inputs[0]
+            prompts = inputs[1]
+            if len(inputs) == 3:
                 outputs = model.generate(
-                    **(collator(inputs[1]).to(device)),
+                    **(collator(inputs[2]).to(device)),
                     **sampling_args
                 )
-            elif len(inputs) == 3:
-                prompts = inputs[0]
+            elif len(inputs) == 4:
                 outputs = model.generate(
-                    **(collator(inputs[1]).to(device)),
-                    images=inputs[2].to(device),
+                    **(collator(inputs[2]).to(device)),
+                    images=inputs[3].to(device),
                     **sampling_args
                 )
             else:
-                assert len(inputs) == 4
-                prompts = inputs[0]
-                collated = collator(inputs[1])
+                assert len(inputs) == 5
+                collated = collator(inputs[2])
                 outputs = model.generate(
                     inputs=collated['input_ids'].to(device),
                     attention_mask=collated['attention_mask'].to(device),
-                    images=inputs[2].to(device),
-                    image_sizes=inputs[3],
+                    images=inputs[3].to(device),
+                    image_sizes=inputs[4],
                     **sampling_args
                 )
 
@@ -634,7 +605,7 @@ def main(args):
                 )
             ]
 
-        return idxs, image_files, langs, labels, metadata, prompts, generations
+        return idxs, image_files, langs, labels, metadata, prefix_texts, prompts, generations
 
     if args.do_sample:
         variant.append('sample')
@@ -695,19 +666,23 @@ def main(args):
             (
                 target_lang,
                 DollarStreet(
-                    ann_langs=['en', 'zh'], target_langs=[target_lang], label_set='dollar',
+                    ann_countries=[], target_langs=[target_lang], label_set='dollar',
                     splits=['test', 'train'], preprocess=preprocess, corpus_dir=args.resources_dir
                 )
             ) for target_lang in TARGET_LANGS
         ]
-    elif args.task == 'vqa':
+    elif args.task == 'aokvqa':
         test_sets = [
             (
                 target_lang,
-                VQA(
-                    ann_langs=['en', 'zh'], target_langs=[target_lang],
-                    preprocess=preprocess, corpus_dir=args.resources_dir
-                )
+                AOKVQA(target_lang, preprocess)
+            ) for target_lang in TARGET_LANGS
+        ]
+    elif args.task == 'cvqa':
+        test_sets = [
+            (
+                target_lang,
+                CVQA(target_lang, preprocess)
             ) for target_lang in TARGET_LANGS
         ]
     else:
@@ -736,18 +711,19 @@ def main(args):
         )
         num_items = len(test_iterator)
 
-        test_files, test_prompts, test_gens, test_labels = \
-            defaultdict(list), defaultdict(list), defaultdict(list), defaultdict(list)
+        test_files, test_prefixes, test_prompts, test_gens, test_labels = \
+            defaultdict(list), defaultdict(list), defaultdict(list), defaultdict(list), defaultdict(list)
         for batch in tqdm(
                 test_iterator, desc='evaluating %s %s' % (target_lang, args.task), total=num_items
         ):
-            idxs, image_files, langs, labels, metadata, prompts, generations = batch_processor(
+            idxs, image_files, langs, labels, metadata, prefix_texts, prompts, generations = batch_processor(
                 batch
             )
 
             for i in range(len(idxs)):
                 metadatum = metadata[i]
                 test_files[metadatum].append(image_files[i])
+                test_prefixes[metadatum].append(prefix_texts[i])
                 test_prompts[metadatum].append(prompts[i])
                 test_gens[metadatum].append(generations[i])
                 test_labels[metadatum].append(labels[i])
@@ -755,9 +731,10 @@ def main(args):
         results = {
             'label_set': label_set,
             'test_files': test_files,
-            'test_labels': test_labels,
+            'test_prefixes': test_prefixes,
             'test_prompts': test_prompts,
-            'test_gens': test_gens
+            'test_gens': test_gens,
+            'test_labels': test_labels
         }
 
         with open(output_file, 'w') as f:
@@ -771,7 +748,8 @@ if __name__ == '__main__':
     parser.add_argument(
         '--task', choices=[
             'dollar',
-            'vqa',
+            'aokvqa',
+            'cvqa',
             'artelingo',
             'allartelingo'
         ], required=True

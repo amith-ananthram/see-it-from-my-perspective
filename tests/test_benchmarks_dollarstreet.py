@@ -7,7 +7,7 @@ class TestDatasetsDollarStreet(unittest.TestCase):
 
     def test_in_en(self):
         dollarstreet = DollarStreet(
-            ann_langs=['en', 'zh'], target_langs=['en'], label_set='dollar',
+            ann_countries=['us', 'cn'], target_langs=['en'], label_set='dollar',
             splits=['train'], preprocess=lambda img: img, corpus_dir='tests/fixtures'
         )
         self.assertEqual(5, len(dollarstreet))
@@ -50,7 +50,7 @@ class TestDatasetsDollarStreet(unittest.TestCase):
 
     def test_gen_zh_no_prefixes(self):
         dollarstreet = DollarStreet(
-            ann_langs=['en', 'zh'], target_langs=['zh'], label_set='dollar',
+            ann_countries=['us', 'cn'], target_langs=['zh'], label_set='dollar',
             splits=['train'], preprocess=lambda img: img, corpus_dir='tests/fixtures'
         )
         self.assertEqual(5, len(dollarstreet))
