@@ -1,8 +1,8 @@
-# See It from My Perspective: Diagnosing the Western Cultural Bias of Large Vision-Language Models in Image Understanding (2024)
+# See It from My Perspective: How Language Affects Cultural Bias in Image Understanding (ICLR 2024)
 
 Amith Ananthram, Elias Stengel-Eskin, Mohit Bansal, Kathleen McKeown
 
-Paper: https://arxiv.org/abs/2406.11665
+Paper: [https://openreview.net/forum?id=Xbl6t6zxZs](https://openreview.net/forum?id=Xbl6t6zxZs)
 
 This codebase allows replication of the experiments in our paper which characterize and root cause Western bias in VLMs.  
 
