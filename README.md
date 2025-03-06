@@ -1,6 +1,6 @@
 # See It from My Perspective: Diagnosing the Western Cultural Bias of Large Vision-Language Models in Image Understanding (2024)
 
-Amith Ananthram, Elias Stengel-Eskin, Carl Vondrick, Mohit Bansal, Kathleen McKeown
+Amith Ananthram, Elias Stengel-Eskin, Mohit Bansal, Kathleen McKeown
 
 Paper: https://arxiv.org/abs/2406.11665
 
