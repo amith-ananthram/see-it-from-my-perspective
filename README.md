@@ -1,4 +1,4 @@
-# See It from My Perspective: How Language Affects Cultural Bias in Image Understanding (ICLR 2024)
+# See It from My Perspective: How Language Affects Cultural Bias in Image Understanding (ICLR 2025)
 
 Amith Ananthram, Elias Stengel-Eskin, Mohit Bansal, Kathleen McKeown
 
